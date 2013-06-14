@@ -1,0 +1,9 @@
+bin/**
+tmp/**
+tmp/**/*
+*.tmp
+*.bak
+*.swp
+target/**
+*.class
+*.jar
