@@ -1,0 +1,160 @@
+<p>Sometimes conditional statements grow out of control over time.  I have seen 10 year old code with conditionals that were pages long - a maintenance nightmare.  Every time a change is needed I have to spend time figuring out what was going on in the code again.  It's never fun to have to do that re-figuring out work, especially if you did it to yourself.  Take this exampl eI pulled from the arduino lib (not really a fair comparison since there a good reasons for this code design on a microcontroller)i</p>
+[cpp]
+void analogWrite(uint8_t pin, int val)
+{
+	pinMode(pin, OUTPUT);
+	if (val == 0)
+	{
+		digitalWrite(pin, LOW);
+	}
+	else if (val == 255)
+	{
+		digitalWrite(pin, HIGH);
+	}
+	else
+	{
+		switch(digitalPinToTimer(pin))
+		{
+			// XXX fix needed for atmega8
+			#if defined(TCCR0) && defined(COM00) && !defined(__AVR_ATmega8__)
+			case TIMER0A:
+				// connect pwm to pin on timer 0
+				sbi(TCCR0, COM00);
+				OCR0 = val; // set pwm duty
+				break;
+			#endif
+
+			#if defined(TCCR0A) && defined(COM0A1)
+			case TIMER0A:
+				// connect pwm to pin on timer 0, channel A
+				sbi(TCCR0A, COM0A1);
+				OCR0A = val; // set pwm duty
+				break;
+			#endif
+
+			#if defined(TCCR0A) && defined(COM0B1)
+			case TIMER0B:
+				// connect pwm to pin on timer 0, channel B
+				sbi(TCCR0A, COM0B1);
+				OCR0B = val; // set pwm duty
+				break;
+			#endif
+
+			#if defined(TCCR1A) && defined(COM1A1)
+			case TIMER1A:
+				// connect pwm to pin on timer 1, channel A
+				sbi(TCCR1A, COM1A1);
+				OCR1A = val; // set pwm duty
+				break;
+			#endif
+    ...
+    ...
+[/cpp]
+<h2>Replace conditional logic with better patterns</h2>
+<p>Take this Java code that generates a HTML snippet using a simple switch statement.
+</p>
+[java]
+public class HTMLGenerator {
+ 	//contrived example: there are many better ways to design web pages than generating HTML with Java....
+	static final String HREF_TEMPLATE = "<a href='%s'>Comment Link</a>";
+	static final String TWITTER_TEMPLATE = "<a class='twitter-tweet' href='https://twitter.com/twitterapi' data-widget-id='%s'>Comment Link</a>";
+	static final String FACEBOOK_TEMPLATE = "<a class='facebook-share' href='https://facebook.com/api' data-share-id='%s'>Comment Link</a>";
+}
+
+public class BlogComment{
+	String comment;
+	BlogCommentSource source;
+	String ref;
+	/**
+	 * Determine how to link from a comment to it's source
+	 * @return the HTML needed to embedd this content in a page
+	 */
+	public String getLinkHTML(){
+		switch (source) {
+			case HREF:
+				return String.format(HTMLGenerator.HREF_TEMPLATE, ref);
+			case FaceBook:
+				return String.format(HTMLGenerator.FACEBOOK_TEMPLATE, ref);	
+			case Twitter:
+				return String.format(HTMLGenerator.TWITTER_TEMPLATE, ref);
+			default:
+				return null;
+		}		
+	}
+}
+---
+	private static final String LINK_RESULT = "<a href='ref'>Comment Link</a>";
+	@Test
+	public void testV1(){
+		BlogComment bc = new BlogComment();
+		bc.comment = "stuff";
+		bc.ref = "ref";
+		bc.source = BlogCommentSource.HREF;
+		assertThat(bc.getLinkHTML(), is(LINK_RESULT));
+	}
+
+[/java]
+<p>Pretty simple, each time you need a new link type or need to change the HTML for a link type you edit the constant template and/or add a new template and type</p>
+<H2>Encapsulate the logic in a Java Enum</H2>
+<p>Java enums's are classes with a few special rules, read <a href="http://javarevisited.blogspot.com/2011/08/enum-in-java-example-tutorial.html">this explaination</a> for more.</p>
+[java]
+public enum BlogCommentSource_V2 {
+	
+	HREF(HTMLGenerator.HREF_TEMPLATE),
+	FaceBook(HTMLGenerator.FACEBOOK_TEMPLATE),
+	Twitter(HTMLGenerator.TWITTER_TEMPLATE);
+	final String template;
+
+	private BlogCommentSource_V2(final String template) {
+		this.template = template;
+	}
+	public String getLinkHTML(String ref){
+		return String.format(template, ref);
+	}		
+}
+---
+	private static final String LINK_RESULT = "<a href='ref'>Comment Link</a>";
+	@Test
+	public void testV2(){
+		BlogComment_V2 bc = new BlogComment_V2();
+		bc.comment = "stuff";
+		bc.ref = "ref";
+		bc.source = BlogCommentSource_V2.HREF;
+		assertThat(bc.getLinkHTML(), is(LINK_RESULT));
+	}
+
+[/java]
+<h2>Use polymorphism</h2>
+<p>Thanks to polymorphism we can embed the logic inside of the condition into classes, allowing that code to grow on it's own, be tested on it's own, and hopefully avoid unintentional coupling.</p>
+[java]
+public abstract class BlogCommentSource_V3 {
+	protected String template;
+	public String comment;
+	public String ref;
+
+	BlogCommentSource_V3(String template){
+		this.template = template;
+	}
+	
+	public String getLinkHTML(){
+		return String.format(template, ref);
+	}		
+}
+---
+public class HREFComment extends BlogCommentSource_V3 {
+	static final String TEMPLATE = "<a href='%s'>Comment Link</a>";
+	HREFComment() {
+		super(TEMPLATE);
+	}
+}
+---
+	private static final String LINK_RESULT = "<a href='ref'>Comment Link</a>";
+	@Test
+	public void testV3(){
+		BlogCommentSource_V3 bc = new HREFComment();
+		bc.comment = "stuff";
+		bc.ref = "ref";
+		assertThat(bc.getLinkHTML(), is(LINK_RESULT));
+	}
+[/java]
+
