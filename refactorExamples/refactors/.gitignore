@@ -1,9 +1,33 @@
+#maven build
+target/**
+
+#java
+*.class
+*.jar
+
+#eclipse
+.project
+.settings/
+.metadata
+local.properties
+.classpath
+.loadpath
+.externalToolBuilders/
+# Locally stored "Eclipse launch configurations"
+*.launch
+#.launcher
+
+
+
+## generic files to ignore
+*~
+*.lock
+*.DS_Store
+*.swp
+*.out
 bin/**
 tmp/**
 tmp/**/*
 *.tmp
 *.bak
-*.swp
-target/**
-*.class
-*.jar
+
