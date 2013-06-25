@@ -1,0 +1,94 @@
+<p>Conditional statements grow out of control over time.  Instead of adding more levels of indentation decreases readability.  Instead of indenting, use guard clauses (return or continue) rather than indent.</p> 
+<h2>Nested Conditional</h2>
+<p>This contrived example returns the correct chemical process to manufacture Aluminum</p>
+[java]
+	static public String getProcessNameNested(String metal, String state, boolean haveEnergyDollarsToSpend) {
+		if (ALUMINUM.equalsIgnoreCase(metal)) {
+			if (ALUM.equalsIgnoreCase(state)) {
+				if (haveEnergyDollarsToSpend) {
+					return ELECTROLYTIC_HALL_HEROULT;
+				} else {
+					return ELECTROLYTIC_WÖHLER_PROCESS;
+				}
+			} else if (BAUXITE.equals(state)) {
+				return CRUSH_THEN_BUBBLE;
+			} else if (CRUSHED_CANS.equals(state)) {
+				return MELT;
+			}
+		}
+		return GO_BACK_TO_THE_LAB;
+	}
+
+ ----
+
+	@Test
+	public void shouldGetProcess() {
+		//Wohler
+		String result = getProcessNameNested(ALUMINUM, ALUM, false);
+		assertThat(result, is(ELECTROLYTIC_WÖHLER_PROCESS));
+
+		//Hall
+		result = getProcessNameNested(ALUMINUM, ALUM, true);
+		assertThat(result, is(ELECTROLYTIC_HALL_HEROULT));
+		
+		//Crush & float
+		result = getProcessNameNested(ALUMINUM, BAUXITE, false);
+		assertThat(result, is(CRUSH_THEN_BUBBLE));	
+
+		//Go back to the lab
+		result = getProcessNameNested("silver", "argentite", false);
+		assertThat(result, is(GO_BACK_TO_THE_LAB));	
+
+	}
+[/java]
+<H2>Replace Nested Conditional with Guard Clauses</H2>
+<p>Take teh guard approach and never get more than a single level of indentation.  <i>Much easier to read</i></p>
+[java]
+	static public String getProcessNameNestedRefactored(String metal, String state, boolean haveEnergyDollarsToSpend) {
+		//pull out the outer indentation.
+		if (!ALUMINUM.equalsIgnoreCase(metal)) {
+			return GO_BACK_TO_THE_LAB;
+		}
+		
+		//do the comparisons, simplest to most complex
+		if (BAUXITE.equals(state)) {
+			return CRUSH_THEN_BUBBLE;
+		}
+		
+		if (CRUSHED_CANS.equals(state)) {
+			return MELT;
+		}
+		
+		if (!ALUM.equalsIgnoreCase(state)) {
+			return GO_BACK_TO_THE_LAB;
+		}
+		
+		//now the complex compare is simple to read.
+		if (haveEnergyDollarsToSpend) {
+			return ELECTROLYTIC_HALL_HEROULT;
+		} else {
+			return ELECTROLYTIC_WÖHLER_PROCESS;
+		}
+	}
+----
+	@Test
+	public void shouldGetProcessRefactored() {
+		//Wohler
+		String result = getProcessNameNestedRefactored(ALUMINUM, ALUM, false);
+		assertThat(result, is(ELECTROLYTIC_WÖHLER_PROCESS));
+
+		//Hall
+		result = getProcessNameNestedRefactored(ALUMINUM, ALUM, true);
+		assertThat(result, is(ELECTROLYTIC_HALL_HEROULT));
+		
+		//Crush & float
+		result = getProcessNameNestedRefactored(ALUMINUM, BAUXITE, false);
+		assertThat(result, is(CRUSH_THEN_BUBBLE));	
+
+		//Go back to the lab
+		result = getProcessNameNestedRefactored("silver", "argentite", false);
+		assertThat(result, is(GO_BACK_TO_THE_LAB));	
+
+	}
+[/java]
+
