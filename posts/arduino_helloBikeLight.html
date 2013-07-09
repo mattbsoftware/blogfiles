@@ -1,0 +1,32 @@
+<a href="http://www.mattbsoftware.com/blog/wp-content/uploads/2013/07/helloBikeLight.jpg"><img class="alignnone size-medium wp-image-124" alt="clip leads, arduino, and voltmeter" src="http://www.mattbsoftware.com/blog/wp-content/uploads/2013/07/helloBikeLight-300x225.jpg" width="300" height="225" /></a>
+<p>I picked up a bicycle flashing light for $5.  It runs off of two AA batteries, and has a single switch to operate the mode of the flasher (off, cycling, flashing, all on).  I have built a shifter project and controlled 16 LEDs, This will save me code and circuitry yielding the same result.</p>
+<p>Once I tore it down and got a meter on it, I found that one side of the single switch just needed to pulled to ground to toggle the mode of the flasher.  From there it was pretty easy.  I added a 20K ohm resister in series with arduino's 3.3v out to the power inputs of the tiny board.  I connected the side of the switch that wants ground to toggle to digital output 3.  Just to be safe I put a diode and a 10k ohm resister between the devices switch and the arduino.</p>
+<p>&lt;insert fritzing here, as soon as I figure out how to make a new part&gt;</p>
+<p>The sketch is pretty simple.  My purpose was to simply control the light so I can use it in another project.  I would like to figure out how to determine the state of the flasher from code,  I imagine I could measure current draw... for another day</p>
+[C++]
+uint8_t BIKE_LIGHT_PIN = 3;
+
+void setup() {
+	Serial.begin(9600);
+	Serial.println("Hello BikeLight");
+	pinMode(BIKE_LIGHT_PIN, OUTPUT);
+}
+
+String state[] = {"Off.", "cycling.", "flashing.","all on."};
+
+int lightState = 0;
+
+void toggleLightSwitch(){
+ digitalWrite(BIKE_LIGHT_PIN, LOW); // when goes to ground, toggles mode
+ delay(150);
+ digitalWrite(BIKE_LIGHT_PIN, HIGH);  //protected by a diode
+ lightState++;
+ Serial.print("Lights are "); Serial.println(state[lightState %4]);
+}
+
+void loop() {
+	toggleLightSwitch();
+	delay(10000);
+}
+[/C++]
+<p>PS: My only bread board has another project on it, hence the clip leads.</p>
